@@ -1,0 +1,6 @@
+---
+vector_version: "0.21.1"
+vector_os_arch: "x86_64"
+vector_dir: "/home/ssco/vector"
+vector_user: "vector"
+vector_group: "vector"

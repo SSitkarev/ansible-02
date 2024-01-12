@@ -1,0 +1,157 @@
+---
+
+- name: Install Clickhouse and Vector
+  hosts: clickhouse
+  become: true
+  tasks:
+    - name: Install, configure, and start Clickhouse
+      tags: clickhouse
+
+      block:
+        - name: Get clickhouse server distrib
+          block:
+            - name: Get clickhouse distrib
+              ansible.builtin.get_url:
+                url: https://packages.clickhouse.com/deb/pool/main/c/clickhouse-server/clickhouse-server_22.3.10.22_amd64.deb
+                dest: ./clickhouse-server_22.3.10.22_amd64.deb
+                mode: "0644"
+               
+            - name: Get clickhouse client distrib
+              ansible.builtin.get_url:
+                url: https://packages.clickhouse.com/deb/pool/main/c/clickhouse-client/clickhouse-client_22.3.10.22_amd64.deb
+                dest: ./clickhouse-client_22.3.10.22_amd64.deb
+                mode: "0644"
+              
+            - name: Get clickhouse common-static distrib
+              ansible.builtin.get_url:
+                url: https://packages.clickhouse.com/deb/pool/main/c/clickhouse-common-static/clickhouse-common-static_22.3.10.22_amd64.deb
+                dest: ./clickhouse-common-static_22.3.10.22_amd64.deb
+                mode: "0644"
+
+        - name: Install clickhouse packages
+          block:
+            - name: Find all .deb packages in directory
+              find:
+                paths: .
+                patterns: "*.deb"
+              register: deb_packages
+
+            - name: Install deb packages
+              apt:
+                deb: "{{ item.path }}"
+                state: present
+              with_items: "{{ deb_packages.files }}"
+          
+      notify: Start clickhouse service
+      
+    - name: Flush handlers
+      meta: flush_handlers
+      
+    - name: Wait for clickhouse-server available
+      ansible.builtin.pause:
+        seconds: 30
+        echo: false
+      
+    - name: Create database
+      ansible.builtin.command: "clickhouse-client -q 'create database logs;'"
+      register: create_db
+      failed_when: create_db.rc != 0 and create_db.rc !=82
+      changed_when: create_db.rc == 0
+      
+    - name: Install Vector
+      block:
+      
+      - name: Create directory
+        ansible.builtin.file:
+          state: directory
+          path: "{{ vector_dir }}"
+          mode: "0755"
+          
+      - name: Get Vector distrib
+        ansible.builtin.get_url:
+          url: https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-{{ vector_os_arch }}-unknown-linux-gnu.tar.gz
+          dest: "{{ vector_dir }}/vector-{{ vector_version }}-{{ vector_os_arch }}-unknown-linux-gnu.tar.gz"
+          mode: "0644"
+
+      - name: Unzip Vector distrib
+        ansible.builtin.unarchive:
+          remote_src: true
+          src: "{{ vector_dir }}/vector-{{ vector_version }}-{{ vector_os_arch }}-unknown-linux-gnu.tar.gz"
+          dest: "{{ vector_dir }}"
+
+      - name: Install Vector binary
+        become: true
+        ansible.builtin.copy:
+          remote_src: true
+          src: "{{ vector_dir }}/vector-{{ vector_os_arch }}-unknown-linux-gnu/bin/vector"
+          dest: /usr/bin/
+          mode: "0755"
+          owner: root
+          group: root
+
+      - name: Check Vector installation
+        ansible.builtin.command: vector --version
+        register: var_vector
+        failed_when: var_vector.rc != 0
+        changed_when: var_vector.rc == 0
+
+      - name: Create Vector config vector.toml
+        become: true
+        ansible.builtin.copy:
+          remote_src: true
+          src: "{{ vector_dir }}/vector-{{ vector_os_arch }}-unknown-linux-gnu/config/vector.toml"
+          dest: /etc/vector/
+          mode: "0644"
+          owner: root
+          group: root
+
+      - name: Create vector.service daemon
+        become: true
+        ansible.builtin.copy:
+          remote_src: true
+          src: "{{ vector_dir }}/vector-{{ vector_os_arch }}-unknown-linux-gnu/etc/systemd/vector.service"
+          dest: /lib/systemd/system/
+          mode: "0644"
+          owner: root
+          group: root
+        notify: Start Vector service
+
+      - name: Modify vector.service file
+        become: true
+        ansible.builtin.replace:
+          backup: true
+          path: /lib/systemd/system/vector.service
+          regexp: ^ExecStart=/usr/bin/vector$
+          replace: ExecStart=/usr/bin/vector --config /etc/vector/vector.toml
+        notify: Start Vector service
+
+      - name: Create user vector
+        become: true
+        ansible.builtin.user:
+          create_home: false
+          name: "{{ vector_user }}"
+
+      - name: Create Vector data_dir
+        become: true
+        ansible.builtin.file:
+          path: /var/lib/vector
+          state: directory
+          mode: "0755"
+          owner: "{{ vector_user }}"
+          group: "{{ vector_group }}"
+
+  handlers:
+  
+    - name: Start clickhouse service
+      become: true
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: restarted
+        
+    - name: Start Vector service
+      become: true
+      ansible.builtin.systemd:
+        daemon_reload: true
+        enabled: false
+        name: vector.service
+        state: restarted
