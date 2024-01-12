@@ -2,12 +2,14 @@
 
 1. Подготовьте свой inventory-файл prod.yml.
 
-Указал локальную машину в качестве хоста [prod.yml]()
+Указал локальную машину в качестве хоста [prod.yml](https://github.com/SSitkarev/ansible-02/tree/main/inventory/prod.yml).
 
 2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает vector. 
 Конфигурация vector должна деплоиться через template файл jinja2. 
 От вас не требуется использовать все возможности шаблонизатора, просто вставьте стандартный конфиг в template файл. 
 Информация по шаблонам по ссылке. не забудьте сделать handler на перезапуск vector в случае изменения конфигурации!
+
+Т.к. виртуалка у меня была на Debian, так же переписал установку clickhouse [site.yml](https://github.com/SSitkarev/ansible-02/blob/main/site.yml).
 
 3. При создании tasks рекомендую использовать модули: get_url, template, unarchive, file.
 
