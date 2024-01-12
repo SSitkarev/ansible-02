@@ -17,13 +17,29 @@
 
 5. Запустите ansible-lint site.yml и исправьте ошибки, если они есть.
 
+Использовал версию ansible [core 2.14.3], модуля ansible-lint в ней не обнаружено...
+
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/5.jpg)
+
 6. Попробуйте запустить playbook на этом окружении с флагом --check.
+
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/6.jpg)
+
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/7.jpg)
 
 7. Запустите playbook на prod.yml окружении с флагом --diff. Убедитесь, что изменения на системе произведены.
 
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/8.jpg)
+
 8. Повторно запустите playbook с флагом --diff и убедитесь, что playbook идемпотентен.
+
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/9.jpg)
 
 9. Подготовьте README.md-файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги. 
 Пример качественной документации ansible playbook по ссылке. Так же приложите скриншоты выполнения заданий №5-8
 
 10. Готовый playbook выложите в свой репозиторий, поставьте тег 08-ansible-02-playbook на фиксирующий коммит, в ответ предоставьте ссылку на него.
+
+Добавлю как результат проделанной работы скриншот подключения к clickhouse серверу
+
+![Задание1](https://github.com/SSitkarev/ansible-02/blob/main/img/10.jpg)
